@@ -2,7 +2,7 @@
 archive
 
 # Data folder
-data/
+data/*
 !data/test.csv
 !data/train.csv
 
