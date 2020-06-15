@@ -201,3 +201,16 @@ class ConfigParser():
                 print("Load initial epoch")
         # TODO return checkpoint itself, or it take extra memory?
         return checkpoint_config
+
+
+def load_config_from_ckpt(config_fn, checkpoint_fn, verbose=True, device="gpu"):
+    config_parser = ConfigParser(
+        config_fn, verbose,
+        **{
+            "device": device,
+            "checkpoint.filename": checkpoint_fn,
+            "checkpoint.model": True,
+        }
+    )
+    config = config_parser()
+    return config    

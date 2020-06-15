@@ -13,16 +13,17 @@ from PIL import Image
 from functools import partial
 from pathlib import Path
 from tqdm.cli import tqdm
-from sklearn.model_selection import StratifiedKFold
 
 
 all_rows = partial(pd.option_context, 'display.max_rows', None, 'display.max_columns', None)
+
 
 def fprint(df):
     """ full print for pandas dataframes 
     """
     with all_rows():
         print(df)
+
 
 def percent_of(scores, cl=1):
     return (scores == cl).sum() / len(scores)
@@ -65,6 +66,8 @@ def load_splits(
 
 EYE_MEAN = [0.2971]
 EYE_STD = [0.1582]
+TRAIN_MASKS_MEAN = [0.0404]
+TRAIN_MASKS_STD = [0.0707]
 
 
 def denormalize(img_tensor, mean=EYE_MEAN, std=EYE_STD):
@@ -87,12 +90,29 @@ def mask_to_tensor(mask, **params):
 custom_to_std_tensor = A.Lambda(image=image_to_std_tensor, mask=mask_to_tensor)
 
 
+def image_to_std_tensor_with_train_mask(image, **params):
+    image = torchvision.transforms.functional.to_tensor(image)
+    image = torchvision.transforms.functional.normalize(
+        image,
+        EYE_MEAN + TRAIN_MASKS_MEAN, 
+        EYE_STD + TRAIN_MASKS_STD
+    )
+    return image
+
+
+custom_to_std_tensor_with_train_mask = A.Lambda(
+    image=image_to_std_tensor_with_train_mask,
+    mask=mask_to_tensor
+)
+
+
 class MaskInfo:
     def __init__(self, mask, r=0.0, b=0.0, g=0.0):
         self.value = mask
         self.r = r
         self.g = g
         self.b = b
+
         
 def blend(origin, *masks, alpha=0.5):
     img = torchvision.transforms.functional.to_pil_image(origin)
@@ -122,3 +142,4 @@ def eye_blend(img, mask):
         MaskInfo(mask == 3, b=1.0),
         alpha=0.2
     )
+

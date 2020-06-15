@@ -11,6 +11,8 @@ import numpy as np
 from fire import Fire
 from pathlib import Path
 from tqdm.cli import tqdm
+from pytorch_toolbelt.inference import tta
+
 from src.config import ConfigParser
 from src.utils import set_global_seed
 
@@ -19,6 +21,7 @@ def run_inferece(
     config_filename,
     checkpoint_filename,
     output_folder,
+    use_tta=False,
     out_shape=(640, 400),
 ):
     set_global_seed(42)
@@ -35,6 +38,8 @@ def run_inferece(
     device = config.device
     model = config.model
     model.eval();
+    
+    model = tta.TTAWrapper(model, tta.fliplr_image2mask) if use_tta else model
     
     print("Inference stage")
     filenames = []

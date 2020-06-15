@@ -3,9 +3,11 @@
 ![baseline-out](figs/baseline-out.png)
 
 ## Scores table
-Config file | Fold 0 | Leaderbord Score
--|-|-
-baseline.yml | 0.9328 | 0.94215
+Submission File | Config file | Fold 0 | Leaderbord Score
+-|-|-|-
+baseline.json |baseline.yml | 0.93276 | 0.94215
+baseline-tta.json |baseline.yml | 0.93358 | 0.94286
+baseline-ensemble-tta.json | baseline.yml | - | 0.94434
 
 ## Training
 ```

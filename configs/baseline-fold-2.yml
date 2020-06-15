@@ -1,0 +1,147 @@
+model:
+    name: models.smp.Unet
+    params:
+        encoder_name: "efficientnet-b2"
+        encoder_weights: "imagenet"
+        in_channels: 1
+        classes: 4
+        activation: ~
+
+device: gpu
+
+criterion:
+    name: L.JaccardLoss
+    params:
+        mode: "multiclass"
+
+optimizer:
+    name: torch.optim.Adam
+    params:
+        lr: 0.001
+
+scheduler:
+    name: torch.optim.lr_scheduler.ReduceLROnPlateau
+    params:
+        patience: 10
+        factor: 0.5
+        mode: "max"
+
+dataloaders:
+    train:
+        name: torch.utils.data.DataLoader
+        params:
+            dataset:
+                name: data.EyeDataset
+                params:
+                    df:
+                        name: utils.load_splits
+                        params:
+                            folds_folder: {path: folds}
+                            val_folds: [2]
+                            only_train: True
+
+                    mode: "train"
+                    transform:
+                        name: A.Compose
+                        params:
+                            transforms:
+                                - {name: A.Resize, params: {height: 384, width: 640}}
+                                - {name: A.HorizontalFlip}
+                                - {replace: utils.custom_to_std_tensor}
+            batch_size: 4
+            num_workers: 10
+            shuffle: True
+            sampler: ~
+    val:
+        name: torch.utils.data.DataLoader
+        params:
+            dataset:
+                name: data.EyeDataset
+                params:
+                    df:
+                        name: utils.load_splits
+                        params:
+                            folds_folder: {path: folds}
+                            val_folds: [2]
+                            only_val: True
+
+                    mode: "val"
+                    transform:
+                        name: A.Compose
+                        params:
+                            transforms:
+                                - {name: A.Resize, params: {height: 384, width: 640}}
+                                - {replace: utils.custom_to_std_tensor}
+            batch_size: 4
+            num_workers: 10
+            shuffle: False
+            sampler: ~
+            
+            
+    test:
+        name: torch.utils.data.DataLoader
+        params:
+            dataset:
+                name: data.EyeDataset
+                params:
+                    df:
+                        name: pd.read_csv
+                        params:
+                            filepath_or_buffer: {path: "data/test.csv"}
+                    mode: "test"
+                    transform:
+                        name: A.Compose
+                        params:
+                            transforms:
+                                - {name: A.Resize, params: {height: 384, width: 640}}
+                                - {replace: utils.custom_to_std_tensor}
+                    return_pos: True
+            batch_size: 8
+            num_workers: 10
+            shuffle: False
+            sampler: ~
+
+metrics:
+    mean_iou:
+        name: metrics.get_jaccard_with_logits
+        params: 
+            class_ids: [1, 2, 3]
+    mean_with_bg_iou:
+        name: metrics.get_jaccard_with_logits
+        params: 
+            class_ids: [0, 1, 2, 3]
+    sclera_iou:
+        name: metrics.get_jaccard_with_logits
+        params: 
+            class_ids: 1
+    iris_iou:
+        name: metrics.get_jaccard_with_logits
+        params: 
+            class_ids: 2
+    pupil_iou:
+        name: metrics.get_jaccard_with_logits
+        params: 
+            class_ids: 3
+
+
+    
+metrics_monitor: "mean_iou"
+metrics_lower_is_better: False
+metrics_initial_best_val: ~
+
+model_folder: {path: models/}
+model_name: "baseline-fold-2"
+remove_previous_ckpt: True
+
+log_folder: {path: logs/}
+writer: True
+writer_add_visualizations: True
+
+
+
+epochs: 50
+initial_epoch: 0
+
+accumulation_steps: 1
+
+checkpoint: ~
